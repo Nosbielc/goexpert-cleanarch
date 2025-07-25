@@ -1,8 +1,10 @@
 package configs
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
-type conf struct {
+type Conf struct {
 	DBDriver          string `mapstructure:"DB_DRIVER"`
 	DBHost            string `mapstructure:"DB_HOST"`
 	DBPort            string `mapstructure:"DB_PORT"`
@@ -15,8 +17,8 @@ type conf struct {
 	RabbitMQURL       string `mapstructure:"RABBITMQ_URL"`
 }
 
-func LoadConfig(path string) (*conf, error) {
-	var cfg *conf
+func LoadConfig(path string) (*Conf, error) {
+	var cfg *Conf
 	viper.SetConfigName("app_config")
 	viper.SetConfigType("env")
 	viper.AddConfigPath(path)
@@ -37,15 +39,11 @@ func LoadConfig(path string) (*conf, error) {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, err
-		}
+		// It's ok if the config file doesn't exist, we'll use env vars and defaults
 	}
-
 	err = viper.Unmarshal(&cfg)
 	if err != nil {
 		return nil, err
 	}
-
 	return cfg, nil
 }

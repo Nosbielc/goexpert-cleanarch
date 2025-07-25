@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/devfullcycle/20-CleanArch/pkg/events"
 	"github.com/streadway/amqp"
@@ -19,21 +18,13 @@ func NewOrderCreatedHandler(rabbitMQChannel *amqp.Channel) *OrderCreatedHandler 
 	}
 }
 
-func (h *OrderCreatedHandler) Handle(event events.EventInterface, wg *sync.WaitGroup) {
-	defer wg.Done()
-	fmt.Printf("Order created: %v", event.GetPayload())
+func (h *OrderCreatedHandler) Handle(event events.EventInterface) {
 	jsonOutput, _ := json.Marshal(event.GetPayload())
-
 	msgRabbitmq := amqp.Publishing{
 		ContentType: "application/json",
 		Body:        jsonOutput,
 	}
 
-	h.RabbitMQChannel.Publish(
-		"amq.direct", // exchange
-		"",           // key name
-		false,        // mandatory
-		false,        // immediate
-		msgRabbitmq,  // message to publish
-	)
+	h.RabbitMQChannel.Publish("amq.direct", "", false, false, msgRabbitmq)
+	fmt.Println("OrderCreatedHandler: ", string(jsonOutput))
 }

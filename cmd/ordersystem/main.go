@@ -35,18 +35,21 @@ func main() {
 	}
 	defer db.Close()
 
-	rabbitMQChannel := getRabbitMQChannel()
+	rabbitMQChannel := getRabbitMQChannel(configs.RabbitMQURL)
 
 	eventDispatcher := events.NewEventDispatcher()
 	eventDispatcher.Register("OrderCreated", &handler.OrderCreatedHandler{
 		RabbitMQChannel: rabbitMQChannel,
 	})
 
-	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcher)
+	// Create adapter for the event dispatcher
+	eventDispatcherAdapter := NewEventDispatcherAdapter(eventDispatcher)
+
+	createOrderUseCase := NewCreateOrderUseCase(db, eventDispatcherAdapter)
 	listOrdersUseCase := NewListOrdersUseCase(db)
 
 	webserver := webserver.NewWebServer(configs.WebServerPort)
-	webOrderHandler := NewWebOrderHandler(db, eventDispatcher)
+	webOrderHandler := NewWebOrderHandler(db, eventDispatcherAdapter)
 	webserver.AddRoute("POST", "/order", webOrderHandler.Create)
 	webserver.AddRoute("GET", "/order", webOrderHandler.List)
 	fmt.Println("Starting web server on port", configs.WebServerPort)
@@ -75,8 +78,8 @@ func main() {
 	http.ListenAndServe(":"+configs.GraphQLServerPort, nil)
 }
 
-func getRabbitMQChannel() *amqp.Channel {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+func getRabbitMQChannel(rabbitMQURL string) *amqp.Channel {
+	conn, err := amqp.Dial(rabbitMQURL)
 	if err != nil {
 		panic(err)
 	}

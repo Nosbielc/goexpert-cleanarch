@@ -2,14 +2,13 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:5.7
+    platform: linux/amd64
     container_name: mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: orders
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
     ports:
       - "3306:3306"
     volumes:
@@ -17,7 +16,7 @@ services:
     networks:
       - cleanarch-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
       timeout: 20s
       retries: 10
 
@@ -38,6 +37,24 @@ services:
       interval: 30s
       timeout: 30s
       retries: 3
+
+  migrate:
+    image: migrate/migrate
+    platform: linux/amd64
+    container_name: migrate
+    restart: "no"
+    networks:
+      - cleanarch-network
+    volumes:
+      - ./sql/migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "mysql://root:root@tcp(mysql:3306)/orders",
+      "up"
+    ]
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   app:
     build: .
@@ -63,6 +80,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - cleanarch-network
 

@@ -1,9 +1,6 @@
 package usecase
 
-import (
-	"github.com/devfullcycle/20-CleanArch/internal/entity"
-	"github.com/devfullcycle/20-CleanArch/pkg/events"
-)
+import "github.com/devfullcycle/20-CleanArch/internal/entity"
 
 type OrderInputDTO struct {
 	ID    string  `json:"id"`
@@ -20,14 +17,30 @@ type OrderOutputDTO struct {
 
 type CreateOrderUseCase struct {
 	OrderRepository entity.OrderRepositoryInterface
-	OrderCreated    events.EventInterface
-	EventDispatcher events.EventDispatcherInterface
+	OrderCreated    OrderCreatedEvent
+	EventDispatcher EventDispatcherInterface
+}
+
+type OrderCreatedEvent interface {
+	GetName() string
+	GetDateTime() string
+	GetPayload() interface{}
+	SetPayload(interface{})
+}
+
+type EventDispatcherInterface interface {
+	Register(eventName string, handler EventHandlerInterface) error
+	Dispatch(event OrderCreatedEvent) error
+}
+
+type EventHandlerInterface interface {
+	Handle(event OrderCreatedEvent)
 }
 
 func NewCreateOrderUseCase(
 	OrderRepository entity.OrderRepositoryInterface,
-	OrderCreated events.EventInterface,
-	EventDispatcher events.EventDispatcherInterface,
+	OrderCreated OrderCreatedEvent,
+	EventDispatcher EventDispatcherInterface,
 ) *CreateOrderUseCase {
 	return &CreateOrderUseCase{
 		OrderRepository: OrderRepository,
@@ -37,13 +50,12 @@ func NewCreateOrderUseCase(
 }
 
 func (c *CreateOrderUseCase) Execute(input OrderInputDTO) (OrderOutputDTO, error) {
-	order := entity.Order{
-		ID:    input.ID,
-		Price: input.Price,
-		Tax:   input.Tax,
+	order, err := entity.NewOrder(input.ID, input.Price, input.Tax)
+	if err != nil {
+		return OrderOutputDTO{}, err
 	}
-	order.CalculateFinalPrice()
-	if err := c.OrderRepository.Save(&order); err != nil {
+	err = c.OrderRepository.Save(order)
+	if err != nil {
 		return OrderOutputDTO{}, err
 	}
 
@@ -51,7 +63,7 @@ func (c *CreateOrderUseCase) Execute(input OrderInputDTO) (OrderOutputDTO, error
 		ID:         order.ID,
 		Price:      order.Price,
 		Tax:        order.Tax,
-		FinalPrice: order.Price + order.Tax,
+		FinalPrice: order.FinalPrice,
 	}
 
 	c.OrderCreated.SetPayload(dto)

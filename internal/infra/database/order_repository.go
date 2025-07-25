@@ -19,11 +19,10 @@ func (r *OrderRepository) Save(order *entity.Order) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
 	_, err = stmt.Exec(order.ID, order.Price, order.Tax, order.FinalPrice)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (r *OrderRepository) FindAll() ([]*entity.Order, error) {
@@ -43,18 +42,5 @@ func (r *OrderRepository) FindAll() ([]*entity.Order, error) {
 		orders = append(orders, &order)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
 	return orders, nil
-}
-
-func (r *OrderRepository) GetTotal() (int, error) {
-	var total int
-	err := r.Db.QueryRow("Select count(*) from orders").Scan(&total)
-	if err != nil {
-		return 0, err
-	}
-	return total, nil
 }

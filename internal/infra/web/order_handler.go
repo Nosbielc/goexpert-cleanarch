@@ -6,19 +6,18 @@ import (
 
 	"github.com/devfullcycle/20-CleanArch/internal/entity"
 	"github.com/devfullcycle/20-CleanArch/internal/usecase"
-	"github.com/devfullcycle/20-CleanArch/pkg/events"
 )
 
 type WebOrderHandler struct {
-	EventDispatcher   events.EventDispatcherInterface
+	EventDispatcher   usecase.EventDispatcherInterface
 	OrderRepository   entity.OrderRepositoryInterface
-	OrderCreatedEvent events.EventInterface
+	OrderCreatedEvent usecase.OrderCreatedEvent
 }
 
 func NewWebOrderHandler(
-	EventDispatcher events.EventDispatcherInterface,
+	EventDispatcher usecase.EventDispatcherInterface,
 	OrderRepository entity.OrderRepositoryInterface,
-	OrderCreatedEvent events.EventInterface,
+	OrderCreatedEvent usecase.OrderCreatedEvent,
 ) *WebOrderHandler {
 	return &WebOrderHandler{
 		EventDispatcher:   EventDispatcher,
@@ -41,6 +40,8 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(output)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -1,6 +1,13 @@
 package entity
 
-import "errors"
+import (
+	"errors"
+)
+
+type OrderRepositoryInterface interface {
+	Save(order *Order) error
+	FindAll() ([]*Order, error)
+}
 
 type Order struct {
 	ID         string
@@ -9,7 +16,7 @@ type Order struct {
 	FinalPrice float64
 }
 
-func NewOrder(id string, price float64, tax float64) (*Order, error) {
+func NewOrder(id string, price, tax float64) (*Order, error) {
 	order := &Order{
 		ID:    id,
 		Price: price,
@@ -19,6 +26,7 @@ func NewOrder(id string, price float64, tax float64) (*Order, error) {
 	if err != nil {
 		return nil, err
 	}
+	order.CalculateFinalPrice()
 	return order, nil
 }
 
@@ -35,11 +43,6 @@ func (o *Order) IsValid() error {
 	return nil
 }
 
-func (o *Order) CalculateFinalPrice() error {
+func (o *Order) CalculateFinalPrice() {
 	o.FinalPrice = o.Price + o.Tax
-	err := o.IsValid()
-	if err != nil {
-		return err
-	}
-	return nil
 }

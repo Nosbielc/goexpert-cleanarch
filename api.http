@@ -16,7 +16,7 @@ POST http://localhost:8080/query
 Content-Type: application/json
 
 {
-  "query": "mutation { createOrder(input: { id: \"order-002\", Price: 150.0, Tax: 15.0 }) { id Price Tax FinalPrice } }"
+  "query": "mutation { createOrder(input: { id: \"order-002\", price: 150.0, tax: 15.0 }) { id price tax finalPrice } }"
 }
 
 ### GraphQL - List Orders
@@ -24,5 +24,12 @@ POST http://localhost:8080/query
 Content-Type: application/json
 
 {
-  "query": "query { orders { id Price Tax FinalPrice } }"
+  "query": "query { orders { id price tax finalPrice } }"
 }
+
+### gRPC Examples (use grpcurl or similar tool)
+# Create Order
+# grpcurl -plaintext -d '{"id": "order-003", "price": 200.0, "tax": 20.0}' localhost:50051 pb.OrderService/CreateOrder
+
+# List Orders
+# grpcurl -plaintext -d '{}' localhost:50051 pb.OrderService/ListOrders
